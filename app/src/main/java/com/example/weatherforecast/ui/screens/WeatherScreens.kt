@@ -1,0 +1,416 @@
+package com.example.weatherforecast.ui.screens
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.weatherforecast.data.model.*
+import com.example.weatherforecast.ui.SearchUiState
+import com.example.weatherforecast.ui.WeatherViewModel
+
+// ═══════════════════════════════════════════════════════════════════
+// Главный экран — список городов
+// ═══════════════════════════════════════════════════════════════════
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CityListScreen(viewModel: WeatherViewModel) {
+    val uiState by viewModel.uiState.collectAsState()
+    val searchState by viewModel.searchState.collectAsState()
+    val selectedCity by viewModel.selectedCity.collectAsState()
+
+    var searchQuery by remember { mutableStateOf("") }
+    var isSearchActive by remember { mutableStateOf(false) }
+
+    if (selectedCity != null) {
+        CityDetailScreen(
+            cityWeather = selectedCity!!,
+            onBack = { viewModel.clearSelectedCity() }
+        )
+        return
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    if (isSearchActive) {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = {
+                                searchQuery = it
+                                viewModel.searchCity(it)
+                            },
+                            placeholder = { Text("Название города...") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    } else {
+                        Text("🌤 Погода", fontWeight = FontWeight.Bold)
+                    }
+                },
+                actions = {
+                    IconButton(onClick = {
+                        isSearchActive = !isSearchActive
+                        if (!isSearchActive) {
+                            searchQuery = ""
+                            viewModel.clearSearch()
+                        }
+                    }) {
+                        Icon(
+                            if (isSearchActive) Icons.Default.Close else Icons.Default.Search,
+                            contentDescription = "Поиск"
+                        )
+                    }
+                    IconButton(onClick = { viewModel.refreshAll() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Обновить")
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        Column(modifier = Modifier.padding(padding)) {
+            if (isSearchActive) {
+                SearchResultsList(
+                    searchState = searchState,
+                    onCitySelected = { city ->
+                        viewModel.addCity(city)
+                        isSearchActive = false
+                        searchQuery = ""
+                    }
+                )
+            } else {
+                if (uiState.savedCities.isEmpty()) {
+                    EmptyState()
+                } else {
+                    LazyColumn(
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(uiState.savedCities) { city ->
+                            CityWeatherCard(
+                                city = city,
+                                cityWeather = uiState.cityWeathers[city.name],
+                                isLoading = city.name in uiState.loadingCities,
+                                error = uiState.errors[city.name],
+                                onClick = {
+                                    uiState.cityWeathers[city.name]?.let {
+                                        viewModel.selectCity(it)
+                                    }
+                                },
+                                onDelete = { viewModel.removeCity(city) }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Карточка города
+// ═══════════════════════════════════════════════════════════════════
+
+@Composable
+fun CityWeatherCard(
+    city: City,
+    cityWeather: CityWeather?,
+    isLoading: Boolean,
+    error: String?,
+    onClick: () -> Unit,
+    onDelete: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = cityWeather != null, onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(4.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.horizontalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.primaryContainer,
+                            MaterialTheme.colorScheme.secondaryContainer
+                        )
+                    )
+                )
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = city.name,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = city.country,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    when {
+                        isLoading -> CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp
+                        )
+                        error != null -> Text(
+                            text = "⚠ $error",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        cityWeather != null -> Text(
+                            text = cityWeather.currentWeatherCode.toWeatherDescription(),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    if (cityWeather != null) {
+                        Text(text = cityWeather.currentWeatherCode.toWeatherEmoji(), fontSize = 40.sp)
+                        Text(
+                            text = "${cityWeather.currentTemp.toInt()}°C",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    IconButton(onClick = onDelete) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "Удалить",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Экран детального прогноза
+// ═══════════════════════════════════════════════════════════════════
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CityDetailScreen(cityWeather: CityWeather, onBack: () -> Unit) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(cityWeather.city.name) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier.padding(padding),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            item { CurrentWeatherCard(cityWeather) }
+
+            item {
+                Text(
+                    "Почасовой прогноз",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(Modifier.height(8.dp))
+                HourlyForecastRow(cityWeather.hourlyForecasts.take(24))
+            }
+
+            item {
+                Text(
+                    "16-дневный прогноз",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            items(cityWeather.dailyForecasts) { day ->
+                DailyForecastRow(day)
+            }
+        }
+    }
+}
+
+@Composable
+fun CurrentWeatherCard(cityWeather: CityWeather) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.primary,
+                            MaterialTheme.colorScheme.tertiary
+                        )
+                    )
+                )
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(text = cityWeather.currentWeatherCode.toWeatherEmoji(), fontSize = 72.sp)
+            Text(
+                text = "${cityWeather.currentTemp.toInt()}°C",
+                style = MaterialTheme.typography.displayLarge,
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = cityWeather.currentWeatherCode.toWeatherDescription(),
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.White.copy(alpha = 0.9f)
+            )
+            Spacer(Modifier.height(16.dp))
+
+            val current = cityWeather.hourlyForecasts.firstOrNull()
+            if (current != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    WeatherStat("💧", "${current.humidity}%", "Влажность")
+                    WeatherStat("💨", "${current.windSpeed.toInt()} км/ч", "Ветер")
+                    WeatherStat("🌧", "${current.precipitationProbability}%", "Осадки")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun WeatherStat(icon: String, value: String, label: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(text = icon, fontSize = 20.sp)
+        Text(text = value, color = Color.White, fontWeight = FontWeight.Bold)
+        Text(text = label, color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
+    }
+}
+
+@Composable
+fun HourlyForecastRow(hours: List<HourlyForecast>) {
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        items(hours) { hour -> HourlyCard(hour) }
+    }
+}
+
+@Composable
+fun HourlyCard(hour: HourlyForecast) {
+    val time = hour.time.substringAfter("T")
+    Card(shape = RoundedCornerShape(12.dp), modifier = Modifier.width(70.dp)) {
+        Column(
+            modifier = Modifier.padding(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(text = time, style = MaterialTheme.typography.bodySmall)
+            Text(text = hour.weatherCode.toWeatherEmoji(), fontSize = 24.sp)
+            Text(text = "${hour.temperature.toInt()}°", fontWeight = FontWeight.Bold)
+            Text(
+                text = "${hour.precipitationProbability}%",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
+}
+
+@Composable
+fun DailyForecastRow(day: DailyForecast) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(text = day.date, modifier = Modifier.weight(1f))
+        Text(text = day.weatherCode.toWeatherEmoji(), fontSize = 24.sp)
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = "${day.tempMax.toInt()}° / ${day.tempMin.toInt()}°",
+            fontWeight = FontWeight.Medium
+        )
+    }
+    HorizontalDivider(thickness = 0.5.dp)
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Вспомогательные компоненты
+// ═══════════════════════════════════════════════════════════════════
+
+@Composable
+fun SearchResultsList(searchState: SearchUiState, onCitySelected: (City) -> Unit) {
+    when (searchState) {
+        is SearchUiState.Loading -> Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(32.dp),
+            contentAlignment = Alignment.Center
+        ) { CircularProgressIndicator() }
+
+        is SearchUiState.Results -> LazyColumn {
+            items(searchState.cities) { city ->
+                ListItem(
+                    headlineContent = { Text(city.name) },
+                    supportingContent = { Text(city.country) },
+                    leadingContent = { Text("📍") },
+                    modifier = Modifier.clickable { onCitySelected(city) }
+                )
+                HorizontalDivider()
+            }
+        }
+
+        is SearchUiState.Error -> Text(
+            text = searchState.message,
+            color = MaterialTheme.colorScheme.error,
+            modifier = Modifier.padding(16.dp)
+        )
+
+        else -> {}
+    }
+}
+
+@Composable
+fun EmptyState() {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("🌍", fontSize = 64.sp)
+            Spacer(Modifier.height(16.dp))
+            Text("Нет городов", style = MaterialTheme.typography.titleLarge)
+            Text("Нажмите 🔍 чтобы добавить город", style = MaterialTheme.typography.bodyMedium)
+        }
+    }
+}
