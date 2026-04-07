@@ -3,8 +3,6 @@ package com.example.weatherforecast.data.model
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
-// ─── Api-Ninjas: ответ на запрос города ───────────────────────────────────────
-
 @JsonClass(generateAdapter = true)
 data class CityResponse(
     val name: String,
@@ -14,8 +12,6 @@ data class CityResponse(
     @Json(name = "is_capital") val isCapital: Boolean = false,
     val population: Int? = null
 )
-
-// ─── Open-Meteo: прогноз погоды ───────────────────────────────────────────────
 
 @JsonClass(generateAdapter = true)
 data class WeatherResponse(
@@ -60,8 +56,6 @@ data class DailyUnits(
     @Json(name = "temperature_2m_min") val tempMin: String
 )
 
-// ─── Внутренние модели UI ──────────────────────────────────────────────────────
-
 data class City(
     val name: String,
     val country: String,
@@ -93,8 +87,6 @@ data class CityWeather(
     val hourlyForecasts: List<HourlyForecast>,
     val dailyForecasts: List<DailyForecast>
 )
-
-// ─── WMO Weather Code → описание и эмодзи ─────────────────────────────────────
 
 fun Int.toWeatherDescription(): String = when (this) {
     0 -> "Ясно"

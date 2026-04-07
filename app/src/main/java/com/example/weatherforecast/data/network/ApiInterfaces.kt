@@ -23,6 +23,5 @@ interface ApiNinjasApi {
     suspend fun searchCity(
         @Header("X-Api-Key") apiKey: String,
         @Query("name") cityName: String,
-        @Query("limit") limit: Int = 5
     ): List<CityResponse>
 }

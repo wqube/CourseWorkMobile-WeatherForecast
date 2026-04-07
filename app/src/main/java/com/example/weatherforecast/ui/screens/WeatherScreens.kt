@@ -22,10 +22,6 @@ import com.example.weatherforecast.data.model.*
 import com.example.weatherforecast.ui.SearchUiState
 import com.example.weatherforecast.ui.WeatherViewModel
 
-// ═══════════════════════════════════════════════════════════════════
-// Главный экран — список городов
-// ═══════════════════════════════════════════════════════════════════
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CityListScreen(viewModel: WeatherViewModel) {
@@ -122,10 +118,6 @@ fun CityListScreen(viewModel: WeatherViewModel) {
     }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// Карточка города
-// ═══════════════════════════════════════════════════════════════════
-
 @Composable
 fun CityWeatherCard(
     city: City,
@@ -178,7 +170,7 @@ fun CityWeatherCard(
                             strokeWidth = 2.dp
                         )
                         error != null -> Text(
-                            text = "⚠ $error",
+                            text = "$error",
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall
                         )
@@ -210,10 +202,6 @@ fun CityWeatherCard(
         }
     }
 }
-
-// ═══════════════════════════════════════════════════════════════════
-// Экран детального прогноза
-// ═══════════════════════════════════════════════════════════════════
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -366,10 +354,6 @@ fun DailyForecastRow(day: DailyForecast) {
     }
     HorizontalDivider(thickness = 0.5.dp)
 }
-
-// ═══════════════════════════════════════════════════════════════════
-// Вспомогательные компоненты
-// ═══════════════════════════════════════════════════════════════════
 
 @Composable
 fun SearchResultsList(searchState: SearchUiState, onCitySelected: (City) -> Unit) {

@@ -5,25 +5,26 @@ import com.example.weatherforecast.data.model.*
 import com.example.weatherforecast.data.network.NetworkModule
 
 class WeatherRepository {
-
     private val weatherApi = NetworkModule.openMeteoApi
     private val cityApi = NetworkModule.apiNinjasApi
     private val apiKey = BuildConfig.API_NINJAS_KEY
 
-    // ── Поиск города по названию ──────────────────────────────────────────────
     suspend fun searchCities(query: String): Result<List<City>> {
         return try {
+
+            println("API KEY = '$apiKey'")
+            println("QUERY = '$query'")
+
             val response = cityApi.searchCity(
                 apiKey = apiKey,
-                cityName = query,
-                limit = 5
+                cityName = query
             )
-            val cities = response.map { cityResponse ->
+            val cities = response.map {
                 City(
-                    name = cityResponse.name,
-                    country = cityResponse.country,
-                    latitude = cityResponse.latitude,
-                    longitude = cityResponse.longitude
+                    name = it.name,
+                    country = it.country,
+                    latitude = it.latitude,
+                    longitude = it.longitude
                 )
             }
             Result.success(cities)
@@ -32,7 +33,6 @@ class WeatherRepository {
         }
     }
 
-    // ── Получение прогноза для города ─────────────────────────────────────────
     suspend fun getWeatherForCity(city: City): Result<CityWeather> {
         return try {
             val response = weatherApi.getForecast(
@@ -46,7 +46,6 @@ class WeatherRepository {
         }
     }
 
-    // ── Маппинг сырого ответа API → UI-модель ─────────────────────────────────
     private fun mapResponseToCityWeather(city: City, response: WeatherResponse): CityWeather {
         val hourly = response.hourly
 

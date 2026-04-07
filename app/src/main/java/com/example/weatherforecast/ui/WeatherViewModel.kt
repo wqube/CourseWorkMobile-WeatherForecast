@@ -11,8 +11,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-// ─── UI-состояния поиска ──────────────────────────────────────────────────────
-
 sealed class SearchUiState {
     object Idle : SearchUiState()
     object Loading : SearchUiState()
@@ -20,16 +18,12 @@ sealed class SearchUiState {
     data class Error(val message: String) : SearchUiState()
 }
 
-// ─── Глобальное состояние экрана ──────────────────────────────────────────────
-
 data class MainUiState(
     val savedCities: List<City> = emptyList(),
     val cityWeathers: Map<String, CityWeather> = emptyMap(),
     val loadingCities: Set<String> = emptySet(),
     val errors: Map<String, String> = emptyMap()
 )
-
-// ─── ViewModel ────────────────────────────────────────────────────────────────
 
 class WeatherViewModel(
     private val repository: WeatherRepository = WeatherRepository()
@@ -44,18 +38,16 @@ class WeatherViewModel(
     private val _selectedCity = MutableStateFlow<CityWeather?>(null)
     val selectedCity: StateFlow<CityWeather?> = _selectedCity.asStateFlow()
 
-    // Стартовые города
     init {
         val defaultCities = listOf(
             City("Moscow", "RU", 55.7558, 37.6173),
-            City("Warsaw", "PL", 52.2297, 21.0122),
-            City("London", "GB", 51.5074, -0.1278)
+            City("Izhevsk", "RU", 56.85, 53.2167),
+            City("Los Angeles", "US", 34.1139, -118.407)
         )
         _uiState.update { it.copy(savedCities = defaultCities) }
         defaultCities.forEach { loadWeatherForCity(it) }
     }
 
-    // ── Поиск ─────────────────────────────────────────────────────────────────
     fun searchCity(query: String) {
         if (query.length < 2) {
             _searchState.value = SearchUiState.Idle
@@ -81,11 +73,16 @@ class WeatherViewModel(
         _searchState.value = SearchUiState.Idle
     }
 
-    // ── Добавление / удаление города ──────────────────────────────────────────
     fun addCity(city: City) {
         if (_uiState.value.savedCities.any { it.name == city.name }) return
         _uiState.update { it.copy(savedCities = it.savedCities + city) }
         loadWeatherForCity(city)
+
+        println(city.name)
+        println(city.country)
+        println(city.latitude)
+        println(city.longitude)
+
         clearSearch()
     }
 
@@ -98,7 +95,6 @@ class WeatherViewModel(
         }
     }
 
-    // ── Загрузка погоды ───────────────────────────────────────────────────────
     fun loadWeatherForCity(city: City) {
         viewModelScope.launch {
             _uiState.update { it.copy(loadingCities = it.loadingCities + city.name) }
