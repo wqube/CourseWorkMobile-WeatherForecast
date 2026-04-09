@@ -1,5 +1,7 @@
 package com.example.weatherforecast.data.model
 
+import androidx.annotation.StringRes
+import com.example.weatherforecast.R
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
@@ -88,17 +90,19 @@ data class CityWeather(
     val dailyForecasts: List<DailyForecast>
 )
 
-fun Int.toWeatherDescription(): String = when (this) {
-    0 -> "Ясно"
-    1, 2, 3 -> "Переменная облачность"
-    45, 48 -> "Туман"
-    51, 53, 55 -> "Морось"
-    61, 63, 65 -> "Дождь"
-    71, 73, 75 -> "Снег"
-    80, 81, 82 -> "Ливень"
-    95 -> "Гроза"
-    96, 99 -> "Гроза с градом"
-    else -> "Неизвестно"
+@StringRes
+fun Int.toWeatherDescriptionRes(): Int = when (this) {
+    0 -> R.string.weather_clear
+    1, 2 -> R.string.weather_partly_cloudy
+    3 -> R.string.weather_cloudy
+    45, 48 -> R.string.weather_fog
+    51, 53, 55 -> R.string.weather_drizzle
+    61, 63, 65 -> R.string.weather_rain
+    71, 73, 75 -> R.string.weather_snow
+    80, 81, 82 -> R.string.weather_shower
+    95 -> R.string.weather_thunderstorm
+    96, 99 -> R.string.weather_thunderstorm_hail
+    else -> R.string.weather_unknown
 }
 
 fun Int.toWeatherEmoji(): String = when (this) {

@@ -2,6 +2,7 @@ package com.example.weatherforecast.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.weatherforecast.R
 import com.example.weatherforecast.data.model.City
 import com.example.weatherforecast.data.model.CityWeather
 import com.example.weatherforecast.data.repository.WeatherRepository
@@ -15,14 +16,14 @@ sealed class SearchUiState {
     object Idle : SearchUiState()
     object Loading : SearchUiState()
     data class Results(val cities: List<City>) : SearchUiState()
-    data class Error(val message: String) : SearchUiState()
+    data class Error(val messageRes: Int) : SearchUiState()
 }
 
 data class MainUiState(
     val savedCities: List<City> = emptyList(),
     val cityWeathers: Map<String, CityWeather> = emptyMap(),
     val loadingCities: Set<String> = emptySet(),
-    val errors: Map<String, String> = emptyMap()
+    val errors: Map<String, Int> = emptyMap()
 )
 
 class WeatherViewModel(
@@ -38,14 +39,9 @@ class WeatherViewModel(
     private val _selectedCity = MutableStateFlow<CityWeather?>(null)
     val selectedCity: StateFlow<CityWeather?> = _selectedCity.asStateFlow()
 
-    init {
-        val defaultCities = listOf(
-            City("Moscow", "RU", 55.7558, 37.6173),
-            City("Izhevsk", "RU", 56.85, 53.2167),
-            City("Los Angeles", "US", 34.1139, -118.407)
-        )
-        _uiState.update { it.copy(savedCities = defaultCities) }
-        defaultCities.forEach { loadWeatherForCity(it) }
+    fun setDefaultCities(cities: List<City>) {
+        _uiState.update { it.copy(savedCities = cities) }
+        cities.forEach { loadWeatherForCity(it) }
     }
 
     fun searchCity(query: String) {
@@ -53,17 +49,20 @@ class WeatherViewModel(
             _searchState.value = SearchUiState.Idle
             return
         }
+
         viewModelScope.launch {
             _searchState.value = SearchUiState.Loading
+
             repository.searchCities(query).fold(
                 onSuccess = { cities ->
-                    _searchState.value = if (cities.isEmpty())
-                        SearchUiState.Error("Города не найдены")
-                    else
-                        SearchUiState.Results(cities)
+                    _searchState.value =
+                        if (cities.isEmpty())
+                            SearchUiState.Error(R.string.no_results)
+                        else
+                            SearchUiState.Results(cities)
                 },
-                onFailure = { error ->
-                    _searchState.value = SearchUiState.Error(error.message ?: "Ошибка поиска")
+                onFailure = {
+                    _searchState.value = SearchUiState.Error(R.string.error_loading)
                 }
             )
         }
@@ -75,13 +74,9 @@ class WeatherViewModel(
 
     fun addCity(city: City) {
         if (_uiState.value.savedCities.any { it.name == city.name }) return
+
         _uiState.update { it.copy(savedCities = it.savedCities + city) }
         loadWeatherForCity(city)
-
-        println(city.name)
-        println(city.country)
-        println(city.latitude)
-        println(city.longitude)
 
         clearSearch()
     }
@@ -98,6 +93,7 @@ class WeatherViewModel(
     fun loadWeatherForCity(city: City) {
         viewModelScope.launch {
             _uiState.update { it.copy(loadingCities = it.loadingCities + city.name) }
+
             repository.getWeatherForCity(city).fold(
                 onSuccess = { cityWeather ->
                     _uiState.update { state ->
@@ -108,11 +104,11 @@ class WeatherViewModel(
                         )
                     }
                 },
-                onFailure = { error ->
+                onFailure = {
                     _uiState.update { state ->
                         state.copy(
                             loadingCities = state.loadingCities - city.name,
-                            errors = state.errors + (city.name to (error.message ?: "Ошибка загрузки"))
+                            errors = state.errors + (city.name to R.string.error_loading)
                         )
                     }
                 }

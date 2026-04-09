@@ -15,9 +15,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.weatherforecast.R
 import com.example.weatherforecast.data.model.*
 import com.example.weatherforecast.ui.SearchUiState
 import com.example.weatherforecast.ui.WeatherViewModel
@@ -51,12 +53,12 @@ fun CityListScreen(viewModel: WeatherViewModel) {
                                 searchQuery = it
                                 viewModel.searchCity(it)
                             },
-                            placeholder = { Text("Название города...") },
+                            placeholder = { Text(stringResource(R.string.search_hint)) },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth()
                         )
                     } else {
-                        Text("🌤 Погода", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.app_name), fontWeight = FontWeight.Bold)
                     }
                 },
                 actions = {
@@ -69,11 +71,11 @@ fun CityListScreen(viewModel: WeatherViewModel) {
                     }) {
                         Icon(
                             if (isSearchActive) Icons.Default.Close else Icons.Default.Search,
-                            contentDescription = "Поиск"
+                            contentDescription = stringResource(R.string.search_hint)
                         )
                     }
                     IconButton(onClick = { viewModel.refreshAll() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Обновить")
+                        Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.refresh))
                     }
                 }
             )
@@ -123,10 +125,12 @@ fun CityWeatherCard(
     city: City,
     cityWeather: CityWeather?,
     isLoading: Boolean,
-    error: String?,
+    error: Int?,
     onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val weatherCode = cityWeather?.currentWeatherCode
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -164,26 +168,27 @@ fun CityWeatherCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(8.dp))
+
                     when {
                         isLoading -> CircularProgressIndicator(
                             modifier = Modifier.size(24.dp),
                             strokeWidth = 2.dp
                         )
                         error != null -> Text(
-                            text = "$error",
+                            text = stringResource(id = error),
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall
                         )
-                        cityWeather != null -> Text(
-                            text = cityWeather.currentWeatherCode.toWeatherDescription(),
+                        weatherCode != null -> Text(
+                            text = stringResource(id = weatherCode.toWeatherDescriptionRes()),
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
                 }
 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    if (cityWeather != null) {
-                        Text(text = cityWeather.currentWeatherCode.toWeatherEmoji(), fontSize = 40.sp)
+                    if (weatherCode != null) {
+                        Text(text = weatherCode.toWeatherEmoji(), fontSize = 40.sp)
                         Text(
                             text = "${cityWeather.currentTemp.toInt()}°C",
                             style = MaterialTheme.typography.headlineMedium,
@@ -193,7 +198,7 @@ fun CityWeatherCard(
                     IconButton(onClick = onDelete) {
                         Icon(
                             Icons.Default.Delete,
-                            contentDescription = "Удалить",
+                            contentDescription = stringResource(R.string.remove_city),
                             tint = MaterialTheme.colorScheme.error
                         )
                     }
@@ -212,7 +217,7 @@ fun CityDetailScreen(cityWeather: CityWeather, onBack: () -> Unit) {
                 title = { Text(cityWeather.city.name) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 }
             )
@@ -227,7 +232,7 @@ fun CityDetailScreen(cityWeather: CityWeather, onBack: () -> Unit) {
 
             item {
                 Text(
-                    "Почасовой прогноз",
+                    stringResource(R.string.hourly_forecast),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -237,7 +242,7 @@ fun CityDetailScreen(cityWeather: CityWeather, onBack: () -> Unit) {
 
             item {
                 Text(
-                    "16-дневный прогноз",
+                    stringResource(R.string.daily_forecast),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -252,6 +257,8 @@ fun CityDetailScreen(cityWeather: CityWeather, onBack: () -> Unit) {
 
 @Composable
 fun CurrentWeatherCard(cityWeather: CityWeather) {
+    val weatherCode = cityWeather.currentWeatherCode
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp)
@@ -270,7 +277,7 @@ fun CurrentWeatherCard(cityWeather: CityWeather) {
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = cityWeather.currentWeatherCode.toWeatherEmoji(), fontSize = 72.sp)
+            Text(text = weatherCode.toWeatherEmoji(), fontSize = 72.sp)
             Text(
                 text = "${cityWeather.currentTemp.toInt()}°C",
                 style = MaterialTheme.typography.displayLarge,
@@ -278,7 +285,7 @@ fun CurrentWeatherCard(cityWeather: CityWeather) {
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = cityWeather.currentWeatherCode.toWeatherDescription(),
+                text = stringResource(id = weatherCode.toWeatherDescriptionRes()),
                 style = MaterialTheme.typography.titleMedium,
                 color = Color.White.copy(alpha = 0.9f)
             )
@@ -290,9 +297,21 @@ fun CurrentWeatherCard(cityWeather: CityWeather) {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    WeatherStat("💧", "${current.humidity}%", "Влажность")
-                    WeatherStat("💨", "${current.windSpeed.toInt()} км/ч", "Ветер")
-                    WeatherStat("🌧", "${current.precipitationProbability}%", "Осадки")
+                    WeatherStat(
+                        icon = "💧",
+                        value = "${current.humidity}%",
+                        label = stringResource(R.string.humidity)
+                    )
+                    WeatherStat(
+                        icon = "💨",
+                        value = "${current.windSpeed.toInt()} км/ч",
+                        label = stringResource(R.string.wind)
+                    )
+                    WeatherStat(
+                        icon = "🌧",
+                        value = "${current.precipitationProbability}%",
+                        label = stringResource(R.string.precipitation)
+                    )
                 }
             }
         }
@@ -378,7 +397,7 @@ fun SearchResultsList(searchState: SearchUiState, onCitySelected: (City) -> Unit
         }
 
         is SearchUiState.Error -> Text(
-            text = searchState.message,
+            text = stringResource(id = searchState.messageRes),
             color = MaterialTheme.colorScheme.error,
             modifier = Modifier.padding(16.dp)
         )
@@ -393,8 +412,8 @@ fun EmptyState() {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text("🌍", fontSize = 64.sp)
             Spacer(Modifier.height(16.dp))
-            Text("Нет городов", style = MaterialTheme.typography.titleLarge)
-            Text("Нажмите 🔍 чтобы добавить город", style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.no_results), style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(R.string.add_city), style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
