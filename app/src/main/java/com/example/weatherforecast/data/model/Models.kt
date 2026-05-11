@@ -105,15 +105,16 @@ fun Int.toWeatherDescriptionRes(): Int = when (this) {
     else -> R.string.weather_unknown
 }
 
-fun Int.toWeatherEmoji(): String = when (this) {
-    0 -> "☀️"
-    1, 2 -> "🌤️"
-    3 -> "☁️"
-    45, 48 -> "🌫️"
-    51, 53, 55 -> "🌦️"
-    61, 63, 65 -> "🌧️"
-    71, 73, 75 -> "❄️"
-    80, 81, 82 -> "⛈️"
-    95, 96, 99 -> "🌩️"
-    else -> "🌡️"
+@StringRes
+fun Int.toWeatherIconRes(): Int = when (this) {
+    0 -> R.string.weather_icon_clear
+    1, 2 -> R.string.weather_icon_partly_cloudy
+    3 -> R.string.weather_icon_cloudy
+    45, 48 -> R.string.weather_icon_fog
+    51, 53, 55 -> R.string.weather_icon_drizzle
+    61, 63, 65 -> R.string.weather_icon_rain
+    71, 73, 75 -> R.string.weather_icon_snow
+    80, 81, 82 -> R.string.weather_icon_shower
+    95, 96, 99 -> R.string.weather_icon_thunderstorm
+    else -> R.string.weather_icon_unknown
 }

@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.annotation.StringRes
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -188,7 +189,7 @@ fun CityWeatherCard(
 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     if (weatherCode != null) {
-                        Text(text = weatherCode.toWeatherEmoji(), fontSize = 40.sp)
+                        Text(text = stringResource(weatherCode.toWeatherIconRes()), fontSize = 40.sp)
                         Text(
                             text = "${cityWeather.currentTemp.toInt()}°C",
                             style = MaterialTheme.typography.headlineMedium,
@@ -277,7 +278,7 @@ fun CurrentWeatherCard(cityWeather: CityWeather) {
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = weatherCode.toWeatherEmoji(), fontSize = 72.sp)
+            Text(text = stringResource(weatherCode.toWeatherIconRes()), fontSize = 72.sp)
             Text(
                 text = "${cityWeather.currentTemp.toInt()}°C",
                 style = MaterialTheme.typography.displayLarge,
@@ -298,17 +299,17 @@ fun CurrentWeatherCard(cityWeather: CityWeather) {
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
                     WeatherStat(
-                        icon = "💧",
+                        iconRes = R.string.icon_humidity,
                         value = "${current.humidity}%",
                         label = stringResource(R.string.humidity)
                     )
                     WeatherStat(
-                        icon = "💨",
+                        iconRes = R.string.icon_wind,
                         value = "${current.windSpeed.toInt()} км/ч",
                         label = stringResource(R.string.wind)
                     )
                     WeatherStat(
-                        icon = "🌧",
+                        iconRes = R.string.icon_precipitation,
                         value = "${current.precipitationProbability}%",
                         label = stringResource(R.string.precipitation)
                     )
@@ -319,9 +320,9 @@ fun CurrentWeatherCard(cityWeather: CityWeather) {
 }
 
 @Composable
-fun WeatherStat(icon: String, value: String, label: String) {
+fun WeatherStat(@StringRes iconRes: Int, value: String, label: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = icon, fontSize = 20.sp)
+        Text(text = stringResource(iconRes), fontSize = 20.sp)
         Text(text = value, color = Color.White, fontWeight = FontWeight.Bold)
         Text(text = label, color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
     }
@@ -343,7 +344,7 @@ fun HourlyCard(hour: HourlyForecast) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(text = time, style = MaterialTheme.typography.bodySmall)
-            Text(text = hour.weatherCode.toWeatherEmoji(), fontSize = 24.sp)
+            Text(text = stringResource(hour.weatherCode.toWeatherIconRes()), fontSize = 24.sp)
             Text(text = "${hour.temperature.toInt()}°", fontWeight = FontWeight.Bold)
             Text(
                 text = "${hour.precipitationProbability}%",
@@ -364,7 +365,7 @@ fun DailyForecastRow(day: DailyForecast) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(text = day.date, modifier = Modifier.weight(1f))
-        Text(text = day.weatherCode.toWeatherEmoji(), fontSize = 24.sp)
+        Text(text = stringResource(day.weatherCode.toWeatherIconRes()), fontSize = 24.sp)
         Spacer(Modifier.width(8.dp))
         Text(
             text = "${day.tempMax.toInt()}° / ${day.tempMin.toInt()}°",
@@ -389,7 +390,7 @@ fun SearchResultsList(searchState: SearchUiState, onCitySelected: (City) -> Unit
                 ListItem(
                     headlineContent = { Text(city.name) },
                     supportingContent = { Text(city.country) },
-                    leadingContent = { Text("📍") },
+                    leadingContent = { Text(stringResource(R.string.icon_location)) },
                     modifier = Modifier.clickable { onCitySelected(city) }
                 )
                 HorizontalDivider()
@@ -410,7 +411,7 @@ fun SearchResultsList(searchState: SearchUiState, onCitySelected: (City) -> Unit
 fun EmptyState() {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("🌍", fontSize = 64.sp)
+            Text(stringResource(R.string.icon_empty_cities), fontSize = 64.sp)
             Spacer(Modifier.height(16.dp))
             Text(stringResource(R.string.no_results), style = MaterialTheme.typography.titleLarge)
             Text(stringResource(R.string.add_city), style = MaterialTheme.typography.bodyMedium)
